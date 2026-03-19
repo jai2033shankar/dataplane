@@ -5,14 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@dataplane.ai");
+  const [password, setPassword] = useState("admin123");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Dummy login: just redirect to dashboard
-    router.push("/dashboard");
+    if (email === "admin@dataplane.ai" && password === "admin123") {
+      router.push("/dashboard");
+    } else {
+      setError("Invalid credentials. Use admin@dataplane.ai / admin123");
+    }
   };
 
   return (
@@ -25,6 +29,12 @@ export default function LoginPage() {
           dataPlane
         </Link>
         <p className="text-xs text-zinc-500 mb-8">Welcome back. Enter your credentials to continue.</p>
+
+        {error && (
+          <div className="w-full p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex items-center gap-2">
+            ⚠️ {error}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">

@@ -66,6 +66,11 @@ docker-compose up -d --build
 | **FastAPI Automated Docs** | `http://localhost:8000/docs` |
 | **Ollama Local LLM Endpoint** | `http://localhost:11434` |
 
+### 🔑 Demo Credentials
+Access the dashboard using the following pre-configured user details:
+- **Email**: `admin@dataplane.ai`
+- **Password**: `admin123`
+
 ---
 
 ## 📖 User Guidance
