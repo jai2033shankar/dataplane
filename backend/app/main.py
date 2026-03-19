@@ -8,8 +8,44 @@ from app.models.connection import DBConnection # ensure models loaded
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables
+    # 1. Create tables
     Base.metadata.create_all(bind=engine)
+
+    # 2. Seed physical dummy databases file on filesystem for demo
+    import sqlite3
+    import os
+    
+    # Source DB
+    src_path = "/tmp/dataplane_crm_source.db"
+    if not os.path.exists(src_path):
+        conn = sqlite3.connect(src_path)
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE crm_users (id INTEGER PRIMARY KEY, first_name TEXT, email_address TEXT, created_at TIMESTAMP)")
+        cursor.execute("CREATE TABLE crm_leads (id INTEGER PRIMARY KEY, email TEXT, status VARCHAR(20))")
+        conn.commit()
+        conn.close()
+
+    # Target DB
+    tgt_path = "/tmp/dataplane_dw_target.db"
+    if not os.path.exists(tgt_path):
+        conn = sqlite3.connect(tgt_path)
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE dw_customers (customer_id INTEGER PRIMARY KEY, given_name TEXT, contact_email TEXT, signup_date DATE)")
+        conn.commit()
+        conn.close()
+
+    # 3. Seed DBConnection rows
+    from sqlalchemy.orm import Session
+    db = Session(bind=engine)
+    try:
+        # Check if already seeded
+        if not db.query(DBConnection).filter(DBConnection.name == "CRM_Source_Analytics").first():
+            db.add(DBConnection(name="CRM_Source_Analytics", type="sqlite", config={"path": src_path}))
+            db.add(DBConnection(name="Data_Warehouse_Target", type="sqlite", config={"path": tgt_path}))
+            db.commit()
+    finally:
+        db.close()
+
     yield
 
 app = FastAPI(

@@ -14,24 +14,37 @@ class SecurityService:
                 "label": "PII",
                 "level": "High",
                 "policy": "Mask on Export",
-                "color": "red"
+                "color": "red",
+                "dama_metadata": {
+                    "data_owner": "Information Security Office",
+                    "data_steward": "Privacy Manager",
+                    "retention": "3 Years after Inactivity"
+                }
             }
             
-        # Medium Risk: Demographic / Location
         elif any(w in name for w in ["name", "zip", "city", "address", "state", "birth", "date_of"]):
             return {
                 "label": "Sensitive",
                 "level": "Medium",
                 "policy": "Restrict Access",
-                "color": "amber"
+                "color": "amber",
+                "dama_metadata": {
+                    "data_owner": "Human Resources / CRM Ops",
+                    "data_steward": "Data Steward - Tier 2",
+                    "retention": "7 Years Standard"
+                }
             }
             
-        # Low Risk: Standard Structural Fields
         return {
             "label": "Public",
             "level": "Low",
             "policy": "No Restrictions",
-            "color": "green"
+            "color": "green",
+            "dama_metadata": {
+                "data_owner": "General Public / IT",
+                "data_steward": "System Admin",
+                "retention": "Indefinite"
+            }
         }
 
     @staticmethod
