@@ -26,6 +26,9 @@ LABEL version="1.0.0"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
+# Prevent PostgreSQL from auto-creating a default cluster
+ENV POSTGRES_INITDB_ARGS="--locale=C.UTF-8"
+ENV PG_CLUSTER_CONF_ROOT="/etc/postgresql-common/createcluster.conf"
 
 # ── Install system dependencies ──────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -57,10 +60,11 @@ COPY --from=frontend-builder /build/frontend /app/frontend
 COPY scripts/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# ── Create log directory ─────────────────────────────────────
-RUN mkdir -p /var/log /var/run/postgresql \
-    && touch /var/log/backend.log /var/log/frontend.log /var/log/postgresql.log \
-    && chown -R postgres:postgres /var/run/postgresql
+# ── Create directories with correct permissions ──────────────
+RUN mkdir -p /var/log/postgresql /var/run/postgresql /var/lib/postgresql \
+    && touch /var/log/backend.log /var/log/frontend.log /var/log/postgresql/postgresql.log \
+    && chown -R postgres:postgres /var/run/postgresql /var/lib/postgresql /var/log/postgresql \
+    && chmod 750 /var/log/postgresql
 
 # ── Expose ports ─────────────────────────────────────────────
 # 3000 = Frontend UI

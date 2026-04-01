@@ -6,26 +6,39 @@ echo "  ✈️  dataPlane — AI-First Data Engineering Platform"
 echo "══════════════════════════════════════════════════════════"
 echo ""
 
-# ── 1. Initialize PostgreSQL ─────────────────────────────────
-echo "🐘 Starting PostgreSQL..."
-if [ ! -d "/var/lib/postgresql/15/main" ] || [ ! "$(ls -A /var/lib/postgresql/15/main 2>/dev/null)" ]; then
-    echo "   Initializing database cluster..."
-    mkdir -p /var/lib/postgresql/15/main /var/run/postgresql
-    chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql
-    su - postgres -c "/usr/lib/postgresql/15/bin/initdb -D /var/lib/postgresql/15/main"
-    # Configure pg_hba for local trust
-    echo "local all all trust" > /var/lib/postgresql/15/main/pg_hba.conf
-    echo "host all all 0.0.0.0/0 trust" >> /var/lib/postgresql/15/main/pg_hba.conf
-    echo "host all all ::0/0 trust" >> /var/lib/postgresql/15/main/pg_hba.conf
-    # Configure postgresql.conf
-    echo "listen_addresses = '*'" >> /var/lib/postgresql/15/main/postgresql.conf
-    echo "port = 5432" >> /var/lib/postgresql/15/main/postgresql.conf
+PG_DATA="/var/lib/postgresql/15/main"
+PG_LOG_DIR="/var/log/postgresql"
+PG_LOG="$PG_LOG_DIR/postgresql.log"
+
+# Fix all permissions upfront
+mkdir -p "$PG_DATA" /var/run/postgresql "$PG_LOG_DIR"
+chown -R postgres:postgres "$PG_DATA" /var/run/postgresql "$PG_LOG_DIR"
+chmod 750 "$PG_LOG_DIR"
+touch "$PG_LOG" && chown postgres:postgres "$PG_LOG"
+
+# If data dir is present but missing postgresql.conf, wipe it for clean start
+if [ -d "$PG_DATA" ] && [ ! -f "$PG_DATA/postgresql.conf" ]; then
+    echo "   Detected dirty data directory, cleaning for fresh init..."
+    rm -rf "$PG_DATA"/*
 fi
 
-mkdir -p /var/run/postgresql
-chown -R postgres:postgres /var/run/postgresql /var/lib/postgresql
+if [ ! -d "$PG_DATA" ] || [ ! "$(ls -A "$PG_DATA" 2>/dev/null)" ]; then
+    echo "   Initializing database cluster..."
+    mkdir -p "$PG_DATA"
+    chown postgres:postgres "$PG_DATA"
+    su - postgres -c "/usr/lib/postgresql/15/bin/initdb -D $PG_DATA"
+    # Configure pg_hba for local trust
+    echo "local all all trust" > "$PG_DATA/pg_hba.conf"
+    echo "host all all 0.0.0.0/0 trust" >> "$PG_DATA/pg_hba.conf"
+    echo "host all all ::0/0 trust" >> "$PG_DATA/pg_hba.conf"
+    # Configure postgresql.conf
+    echo "listen_addresses = '*'" >> "$PG_DATA/postgresql.conf"
+    echo "port = 5432" >> "$PG_DATA/postgresql.conf"
+fi
 
-su - postgres -c "/usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main -l /var/log/postgresql.log start -w -t 30"
+chown -R postgres:postgres /var/run/postgresql "$PG_DATA" "$PG_LOG_DIR"
+
+su - postgres -c "/usr/lib/postgresql/15/bin/pg_ctl -D $PG_DATA -l $PG_LOG start -w -t 30"
 
 # Wait for postgres
 for i in $(seq 1 15); do
