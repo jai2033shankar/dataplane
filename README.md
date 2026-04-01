@@ -14,46 +14,46 @@ dataPlane is a production-grade platform for managing heterogeneous data systems
 
 ```mermaid
 graph TD
-    User([User / Engineer]) -->|Interacts| UI[Next.js 14 Frontend]
-    UI -->|API Requests| API[FastAPI Backend]
+    User([User / Engineer]) -->|Browser| UI[Next.js Frontend :3000]
 
-    subgraph "Frontend Modules"
-        UI --> VIZ[🌐 Graph Visualizer<br/>ReactFlow]
-        UI --> QS[💬 Query Studio<br/>NL-to-SQL]
-        UI --> AD[🤖 AskData Bot<br/>Conversational AI]
-        UI --> SM[🗺️ Schema Mapper<br/>Visual + English]
-        UI --> PIPE[🔗 Pipeline Studio<br/>React Flow Canvas]
-        UI --> SEC[🛡️ Security Center<br/>PII / DAMA]
+    subgraph DOCKER["🐳 dataPlane All-in-One Container"]
+
+        subgraph FE["Frontend Modules"]
+            UI --> VIZ["🌐 Graph Visualizer"]
+            UI --> QS["💬 Query Studio NL2SQL"]
+            UI --> AD["🤖 AskData Bot"]
+            UI --> SM["🗺️ Schema Mapper"]
+            UI --> PIPE["🔗 Pipeline Studio"]
+            UI --> SEC["🛡️ Security Center"]
+        end
+
+        UI -->|API| API[FastAPI Backend :8000]
+
+        subgraph BE["Backend Services"]
+            API --> NL2SQL[NL2SQL Service]
+            API --> AskDataSvc[AskData Service]
+            API --> MapperSvc[Schema Mapper]
+            API --> DiffSvc[Diff Engine]
+            API --> SecSvc[Security Scanner]
+        end
+
+        subgraph CONN["Database Connectors"]
+            API --> SQLite["💾 SQLite"]
+            API --> PG["🐘 PostgreSQL"]
+            API --> MY["🐬 MySQL"]
+            API --> ORA["🏛️ Oracle"]
+            API --> JDBC["🔗 JDBC"]
+        end
+
+        PG --> PGDB[("PostgreSQL 15\nHR Data")]
+
     end
 
-    subgraph "Backend Services"
-        API --> SchemaService[Schema Service]
-        API --> DiffService[Diff Engine]
-        API --> NL2SQL[NL2SQL Service]
-        API --> AskDataSvc[AskData Service]
-        API --> MapperSvc[Schema Mapper]
-        API --> SecSvc[Security Scanner]
+    subgraph EXT["External Optional"]
+        API -.->|Optional| Ollama["Ollama LLM\nllama3 / mistral"]
     end
 
-    subgraph "Connectors"
-        SchemaService --> SQLite[💾 SQLite]
-        SchemaService --> Postgres[🐘 PostgreSQL]
-        SchemaService --> MySQL[🐬 MySQL]
-        SchemaService --> Oracle[🏛️ Oracle]
-        SchemaService --> JDBC[🔗 JDBC Generic]
-    end
-
-    subgraph "AI Engine"
-        API --> Ollama[Local Ollama LLM]
-        Ollama --> Models[llama3 / mistral]
-    end
-
-    subgraph "Data Layer"
-        Postgres --> PG_DB[(PostgreSQL<br/>HR Data)]
-        MySQL --> MY_DB[(MySQL<br/>E-Commerce)]
-        SQLite --> SQ_DB[(SQLite Files<br/>CRM + DW)]
-        Oracle --> OR_DB[(Oracle Sim<br/>Finance)]
-    end
+    SQLite --> SQDB[("SQLite Files\nCRM + DW + E-Com + Finance")]
 ```
 
 ---
@@ -91,29 +91,61 @@ React Flow based drag-and-drop canvas for designing data transformation pipeline
 
 ### Prerequisites
 - Docker and Docker Compose installed
-- 4GB+ RAM recommended (for Ollama LLM)
+- 2GB+ RAM (4GB+ if using Ollama LLM)
 
-### Quick Start
+---
+
+### 🚀 Option A: All-in-One Image (Recommended for On-Prem)
+
+**One command to install and run everything:**
+
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd dataplane
+# Build the all-in-one image
+docker build -t dataplane .
 
-# Start all services
-docker-compose up -d --build
-
-# Wait for services to initialize (~60s)
-docker-compose ps
+# Run it — that's it!
+docker run -d --name dataplane -p 3000:3000 -p 8000:8000 dataplane
 ```
+
+Or use Docker Compose:
+```bash
+docker-compose --profile aio up -d --build
+```
+
+This single image includes:
+- ✅ Next.js Frontend (port 3000)
+- ✅ FastAPI Backend (port 8000)
+- ✅ PostgreSQL 15 with seeded demo data
+- ✅ 5 synthetic databases (CRM, DW, E-Commerce, Finance, HR)
+- ✅ All AI services (NL-to-SQL, AskData, Schema Mapper)
+
+**Ship to on-prem:**
+```bash
+# Save image to file
+docker save dataplane:latest | gzip > dataplane-v1.0.tar.gz
+
+# On target machine — load and run
+docker load < dataplane-v1.0.tar.gz
+docker run -d --name dataplane -p 3000:3000 -p 8000:8000 dataplane
+```
+
+---
+
+### 🔧 Option B: Multi-Service (Development)
+
+```bash
+# Start all services separately (Postgres + MySQL + Backend + Frontend)
+docker-compose --profile dev up -d --build
+```
+
+---
 
 ### Navigation Endpoints
 | Component | URL |
 | :--- | :--- |
 | **Frontend UI** | `http://localhost:3000` |
-| **FastAPI Docs** | `http://localhost:8000/docs` |
-| **Ollama LLM** | `http://localhost:11434` |
+| **FastAPI API Docs** | `http://localhost:8000/docs` |
 | **PostgreSQL** | `localhost:5432` |
-| **MySQL** | `localhost:3306` |
 
 ### 🔑 Demo Credentials
 - **Email**: `admin@dataplane.ai`
